@@ -10,8 +10,9 @@ service Wordle {
 }
 
 message GuessedWord{
-  string word = 1;
+  string guess = 1; //guess is more describetive to me than word
 }
+
 message PlayValues{
   string resultString = 1;
 }

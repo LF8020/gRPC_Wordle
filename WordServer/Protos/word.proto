@@ -1,13 +1,13 @@
 syntax = "proto3";
 option csharp_namespace = "WordServer.Protos";
 
-service Word {//DailyWord proto
+service DailyWord {//DailyWord proto
 	rpc GetWord(WordRequest) returns(WordResult);//GetWord RPC
 	rpc ValidateWord(InputWord) returns(ValidationResult);//ValidateWord RPC
 }
 
 message WordRequest {//message for input for ValidateWord
-	int64 date = 1;
+	//we can just get current date
 }
 
 message WordResult {//message for input for ValidateWord
