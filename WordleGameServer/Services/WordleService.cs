@@ -22,103 +22,133 @@ namespace WordleGameServer.Services
         }
 
         //GetStats will return stored values from a file which are updated each time a user finishes a game.
-        //public override Task<UserStats> GetStats(StatRequest request, ServerCallContext context)
-        //{
-        //    return Task.FromResult(new UserStats
-        //    {
-        //        Guesses = userGuesses,//TODO: Don't know how to assign array to repeated int32
-        //        PercentWon = Math.Round(((decimal)winners / numUsers) * 100) / 100,
-        //        NumUsers = numUsers
-        //    });
-        //}
+        public override Task<UserStats> GetStats(StatRequest request, ServerCallContext context)
+        {
+            //TODO: Read from file operation
+            return Task.FromResult(new UserStats
+            {
+                //Guesses = userGuesses,//TODO: Don't know how to assign array to repeated int32
+                PercentWon = (float)(Math.Round(((decimal)winners / numUsers) * 100) / 100),
+                NumUsers = numUsers
+            });
+        }
 
+        //TODO: Make Play bidirectional.
         public override Task<PlayValues> Play(GuessedWord request, ServerCallContext context)
         {
-            string wordOfDay = "zonal";//TODO: Will call other service later.
+            string wordOfDay = "zonal";//TODO: Will call other service later to get word of day. zonal is just a test assignment
             int turns = 0;
             bool gameWon = false;
-            char[] resultChars = new char[5];
-            while (!gameWon && turns < 6)
+            bool validWord = true;//TODO: Replace with call to other service's validateWord to check guessed word against it
+            char[] resultChars = new char[5];//Result string sent back, the *, ?, X
+            if (validWord)
             {
-                turns++;
-                if (request.Word == wordOfDay)
+                while (!gameWon && turns < 6)//TODO: need so somehow check if another word is played according to project file, not sure what they mean.
                 {
-                    gameWon = true;
-                    for (int i = 0; i < 5; i++)
+                    
+                    if (request.Word == wordOfDay)
                     {
-                        resultChars[i] = '*';
-                    }
-                    numUsers++;
-                    winners++;
-                    userGuesses[turns - 1]++;
-                }
-                else
-                {
-                    Dictionary<char, int> matches = new Dictionary<char, int>()
-                    {
-                        ['A'] = 0,
-                        ['B'] = 0,
-                        ['C'] = 0,
-                        ['D'] = 0,
-                        ['E'] = 0,
-                        ['F'] = 0,
-                        ['G'] = 0,
-                        ['H'] = 0,
-                        ['I'] = 0,
-                        ['J'] = 0,
-                        ['K'] = 0,
-                        ['L'] = 0,
-                        ['M'] = 0,
-                        ['N'] = 0,
-                        ['O'] = 0,
-                        ['P'] = 0,
-                        ['Q'] = 0,
-                        ['R'] = 0,
-                        ['S'] = 0,
-                        ['T'] = 0,
-                        ['U'] = 0,
-                        ['V'] = 0,
-                        ['W'] = 0,
-                        ['X'] = 0,
-                        ['Y'] = 0,
-                        ['Z'] = 0,
-                    };
-
-                    for (int i = 0; i < wordOfDay.Length; i++)
-                    {
-                        char letter = request.Word[i];
-                        if (letter == wordOfDay[i])
+                        gameWon = true;
+                        for (int i = 0; i < 5; i++)
                         {
                             resultChars[i] = '*';
-                            matches[letter]++;
                         }
+                        numUsers++;
+                        winners++;//TODO: update these to read file operation, then adjust value, then write back
+                        userGuesses[turns]++;
                     }
-
-                    //Search request word for letters that aren't in correct position
-                    for (int i = 0; i < wordOfDay.Length; i++)
+                    else
                     {
-                        char letter = request.Word[i];
-                        if (CountFrequency(wordOfDay, letter) == 0)
+                        Dictionary<char, int> matches = new Dictionary<char, int>()
                         {
-                            resultChars[i] = 'X';
+                            ['A'] = 0,
+                            ['B'] = 0,
+                            ['C'] = 0,
+                            ['D'] = 0,
+                            ['E'] = 0,
+                            ['F'] = 0,
+                            ['G'] = 0,
+                            ['H'] = 0,
+                            ['I'] = 0,
+                            ['J'] = 0,
+                            ['K'] = 0,
+                            ['L'] = 0,
+                            ['M'] = 0,
+                            ['N'] = 0,
+                            ['O'] = 0,
+                            ['P'] = 0,
+                            ['Q'] = 0,
+                            ['R'] = 0,
+                            ['S'] = 0,
+                            ['T'] = 0,
+                            ['U'] = 0,
+                            ['V'] = 0,
+                            ['W'] = 0,
+                            ['X'] = 0,
+                            ['Y'] = 0,
+                            ['Z'] = 0,
+                        };
 
-                        }
-                        else if (letter != wordOfDay[i])
+                        //Check to see if letter is in corect position
+                        for (int i = 0; i < wordOfDay.Length; i++)
                         {
-                            if (matches[letter] < CountFrequency(wordOfDay, letter))
+                            char letter = request.Word[i];
+                            if (letter == wordOfDay[i])
                             {
-                                resultChars[i] = '?';
-                                matches[letter] += 1;
+                                resultChars[i] = '*';
+                                matches[letter]++;
+                            }
+                        }
+
+                        //Search request word for letters that aren't in correct position
+                        for (int i = 0; i < wordOfDay.Length; i++)
+                        {
+                            char letter = request.Word[i];
+                            if (CountFrequency(wordOfDay, letter) == 0)
+                            {
+                                resultChars[i] = 'X';
+
+                            }
+                            else if (letter != wordOfDay[i])
+                            {
+                                if (matches[letter] < CountFrequency(wordOfDay, letter))
+                                {
+                                    resultChars[i] = '?';//Looking at this if statement we're given, it seems wrong.
+                                    matches[letter] += 1;//I know it's meant to check if there's more than one letter of the same letter but I feel like it's updated wrong, unless matches resets between iterations.
+                                }
+                                else
+                                {
+                                    resultChars[i] = 'X';//Should theoretically be called when there's more letters than matches.
+                                    //Example: aabbb
+                                    //Input word: aaabb
+                                    // **X**
+
+                                    //Example: aacbd
+                                    //Input word: bbaaa
+                                    // ?X??X
+
+                                    //In a nutshell, if there's too many of a letter, subsequent iterations of that letter are 'wrong'
+                                }
                             }
                         }
                     }
                 }
+                string resultString = resultChars.ToString() ?? "";
+                turns++;//TODO: Update the user's turns. Not sure how to get this to persist across calls, haven't looked at bidirectional yet.
+
+                //TODO: Also somehow return an arrays of characters already tried yet incorrect, not yet tried, as well as tried and correct
+                //  Not sure how we're supposed to handle characters tried yet not in the right position. Not stated in project file.
+                return Task.FromResult(new PlayValues
+                {
+                    ResultString = resultString
+                });
             }
-            string resultString = resultChars.ToString() ?? "";
-            return Task.FromResult(new PlayValues
+            else
             {
-                ResultString = resultString
-            });
+                //TODO: Return something which tells the client the word didn't exist. Do not increment turns counter.
+                return null;
+            }
+            
         }
     }
 }
