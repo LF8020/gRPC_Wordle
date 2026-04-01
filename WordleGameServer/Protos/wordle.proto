@@ -6,7 +6,7 @@ option csharp_namespace = "WordleGameServer.Protos";
 service Wordle {
   // Sends a greeting
   rpc GetStats(StatRequest) returns (UserStats);
-  rpc Play(GuessedWord) returns (PlayValues);
+  rpc Play(stream GuessedWord) returns (stream PlayValues);
 }
 
 message GuessedWord{
