@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../WordleGameClient/WordleGameClient.csproj" />
+  <Project Path="../WordleGameServer/WordleGameServer.csproj" />
+  <Project Path="WordServer.csproj" />
+</Solution>
