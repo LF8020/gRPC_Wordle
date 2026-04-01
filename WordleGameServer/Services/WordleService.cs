@@ -34,18 +34,21 @@ namespace WordleGameServer.Services
         }
 
         //TODO: Make Play bidirectional.
-        public override Task<PlayValues> Play(GuessedWord request, ServerCallContext context)
+        public override async Task Play(IAsyncStreamReader<GuessedWord> requestStream, IServerStreamWriter<PlayValues> responseStream, ServerCallContext context)
         {
             string wordOfDay = "zonal";//TODO: Will call other service later to get word of day. zonal is just a test assignment
             int turns = 0;
             bool gameWon = false;
             bool validWord = true;//TODO: Replace with call to other service's validateWord to check guessed word against it
             char[] resultChars = new char[5];//Result string sent back, the *, ?, X
-            if (validWord)
+            
+            while (await requestStream.MoveNext() && !gameWon && turns < 6)//TODO: need so somehow check if another word is played according to project file, not sure what they mean.
             {
-                while (!gameWon && turns < 6)//TODO: need so somehow check if another word is played according to project file, not sure what they mean.
+                GuessedWord request = requestStream.Current;
+                PlayValues response;
+
+                if (validWord)
                 {
-                    
                     if (request.Word == wordOfDay)
                     {
                         gameWon = true;
@@ -132,23 +135,22 @@ namespace WordleGameServer.Services
                             }
                         }
                     }
+                    response = new()
+                    {
+                        ResultString = resultChars.ToString() ?? ""
+                    };
+                    turns++;//TODO: Update the user's turns. Not sure how to get this to persist across calls, haven't looked at bidirectional yet.
                 }
-                string resultString = resultChars.ToString() ?? "";
-                turns++;//TODO: Update the user's turns. Not sure how to get this to persist across calls, haven't looked at bidirectional yet.
-
-                //TODO: Also somehow return an arrays of characters already tried yet incorrect, not yet tried, as well as tried and correct
-                //  Not sure how we're supposed to handle characters tried yet not in the right position. Not stated in project file.
-                return Task.FromResult(new PlayValues
+                else
                 {
-                    ResultString = resultString
-                });
+                    //TODO: Return something to communicate that the word was not valid. Do not increment turns.
+                    response = new()
+                    {
+                        ResultString = ""
+                    };
+                }
+                await responseStream.WriteAsync(response);
             }
-            else
-            {
-                //TODO: Return something which tells the client the word didn't exist. Do not increment turns counter.
-                return null;
-            }
-            
         }
     }
 }
