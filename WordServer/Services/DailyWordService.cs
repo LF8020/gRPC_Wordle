@@ -16,14 +16,14 @@ namespace WordServer.Services
     //ii.ValidateWord
     //1.    Returns a Boolean value of true if the word argument passed-in matches a
     //      word in the file wordle.json
-    public class DailyWordService : Protos.Word.WordBase
+    public class DailyWordService : Word.WordBase
     {
 
-        private readonly ILogger<DailyWordService> _logger;
-        public DailyWordService(ILogger<DailyWordService> logger)
-        {
-            _logger = logger;
-        }
+        //private readonly ILogger<DailyWordService> _logger;
+        //public DailyWordService(ILogger<DailyWordService> logger)
+        //{
+        //    _logger = logger;
+        //}
 
         public override Task<ValidationResult> ValidateWord(InputWord request, ServerCallContext context)
         {//Validate word against wordle.json contents

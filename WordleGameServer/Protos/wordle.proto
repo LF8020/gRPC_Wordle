@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option csharp_namespace = "WordleGameServer.Protos";
+
+// The greeting service definition.
+service Wordle {
+  // Sends a greeting
+  rpc GetStats(StatRequest) returns (UserStats);
+}
+
+message StatRequest{}
+
+// The response message containing the user stats.
+message UserStats {
+  int32 numUsers = 1;
+  int32 percentWon = 2;//for example, will be passed back as '80' instead of '0.8'
+  repeated int32 guesses = 3;//array of ints
+}
