@@ -1,16 +1,31 @@
 using Grpc.Core;
-using System.Numerics;
+using Grpc.Net.Client;
+using System.Text.Json;
+using System.Xml.Linq;
 using WordleGameServer.Protos;
+using WordServer.Protos;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace WordleGameServer.Services
 {
+    public class UserData
+    {
+        public int NumUsers { get; set; }
+        public int Winners { get; set; }
+        public List<int> UserGuesses { get; set; }
+
+        public UserData()
+        {
+            NumUsers = 0;
+            Winners = 0;
+            UserGuesses = new List<int>()
+            {
+                0,0,0,0,0,0
+            };
+        }
+    }
     public class WordleService : Wordle.WordleBase
     {
-        int numUsers = 0;
-        int winners = 0;//TODO: Move these stats to a file, using a mutex to prevent deadlock
-        int[] userGuesses = [0, 0, 0, 0, 0, 0];
-
         public int CountFrequency(string word, char letter)
         {//check frequency of letter in a word
             int count = 0;
@@ -24,21 +39,16 @@ namespace WordleGameServer.Services
         //GetStats will return stored values from a file which are updated each time a user finishes a game.
         public override Task<UserStats> GetStats(StatRequest request, ServerCallContext context)
         {
-            //TODO: Read from file operation
-            return Task.FromResult(new UserStats
+            string json = File.ReadAllText("userData.json");
+            UserData data = Newtonsoft.Json.JsonConvert.DeserializeObject<UserData>(json) ?? new();
+
+            UserStats response = new()
             {
-                //Guesses = userGuesses,//TODO: Don't know how to assign array to repeated int32
-                PercentWon = (float)(Math.Round(((decimal)winners / numUsers) * 100) / 100),
-                NumUsers = numUsers
-            });
-        }
-
-        public bool ValidGuess(string guess)
-        {
-            if (string.IsNullOrEmpty(guess)) return false;
-            if (guess.Length != 5) return false;
-
-            return true;
+                PercentWon = (float)(Math.Round(((decimal)data.Winners / data.NumUsers) * 100) / 100),
+                NumUsers = data.NumUsers
+            };
+            response.Guesses.AddRange(data.UserGuesses);
+            return Task.FromResult(response);
         }
 
         public bool GameOver(string guess, string wordOfDay, int guessIndex)
@@ -147,10 +157,18 @@ namespace WordleGameServer.Services
             }
         }
 
-        //TODO: Make Play bidirectional.
         public override async Task Play(IAsyncStreamReader<GuessedWord> requestStream, IServerStreamWriter<PlayValues> responseStream, ServerCallContext context)
         {
-            string wordOfDay = "zonal"; //TODO: Will call other service later to get word of day. zonal is just a test assignment
+            Mutex m = new();
+            var channel = GrpcChannel.ForAddress("https://localhost:7139");
+            var word = new Word.WordClient(channel);
+
+            //Calls WordServer to request word of day
+            WordRequest request = new WordRequest()
+            {
+                Date = new DateTime().Ticks
+            };
+            string wordOfDay = word.GetWord(request).Word;//Assign word to string
             int guessIndex = 0;
 
 
@@ -162,15 +180,18 @@ namespace WordleGameServer.Services
                 "a","b","c","d","e","f",
                 "g","h","i","j","k","l",
                 "m","n","o","p","q","r",
-                "s","t", "u","v","w","x",
+                "s","t","u","v","w","x",
                 "y","z"
             };
 
             while (await requestStream.MoveNext() && guessIndex < 6)
             {
-                string guess = requestStream.Current.Guess.ToLower();
+                InputWord wordToCheck = new InputWord()
+                {
+                    Word = requestStream.Current.Guess.ToLower()
+                };
 
-                if (!ValidGuess(guess))
+                if (!word.ValidateWord(wordToCheck).IsValid)
                 {
                     await responseStream.WriteAsync(new PlayValues
                     {
@@ -182,49 +203,77 @@ namespace WordleGameServer.Services
                         Message = "Invalid Guess"
                     });
                 }
-
-                string guessAccuracy = GuessAccuracy(guess, wordOfDay);
-
-                UpdateCorrectLetters(guess, guessAccuracy, correctLetters);
-                UpdateIncorrectLetters(guess, guessAccuracy, incorrectLetters);
-                UpdateAvailableLetters(correctLetters, incorrectLetters, availableLetters);
-
-                bool gameWin = GameWin(guess, wordOfDay);
-                bool gameOver = GameOver(guess, wordOfDay, guessIndex);
-                string message = "Countinue...";
-
-                if (gameWin)
-                    message = "You Win!";
-                if (gameOver)
-                    message = "You Lose :( the word was" + wordOfDay;
-
-                PlayValues response = new PlayValues
+                else
                 {
-                    ValidGuess = true,
-                    GameOver = gameOver,
-                    GameWin = gameWin,
-                    GuessIndex = guessIndex,
-                    GuessAccuracy = guessAccuracy,
-                    Message = message
-                };
 
-                response.CorrectLetters.AddRange(correctLetters);
-                response.IncorrectLetters.AddRange(incorrectLetters);
-                response.AvailableLetters.AddRange(availableLetters);
+                    string guessAccuracy = GuessAccuracy(wordToCheck.Word, wordOfDay);
 
-                await responseStream.WriteAsync(response);
+                    UpdateCorrectLetters(wordToCheck.Word, guessAccuracy, correctLetters);
+                    UpdateIncorrectLetters(wordToCheck.Word, guessAccuracy, incorrectLetters);
+                    UpdateAvailableLetters(correctLetters, incorrectLetters, availableLetters);
 
-                if (gameOver)
-                {
-                    numUsers++;
+                    bool gameWin = GameWin(wordToCheck.Word, wordOfDay);
+                    bool gameOver = GameOver(wordToCheck.Word, wordOfDay, guessIndex);
+                    string message = "Countinue...";
+
                     if (gameWin)
+                        message = "You Win!";
+                    if (gameOver)
+                        message = "You Lose :( the word was" + wordOfDay;
+
+                    PlayValues response = new PlayValues
                     {
-                        winners++;
-                        userGuesses[guessIndex]++;
+                        ValidGuess = true,
+                        GameOver = gameOver,
+                        GameWin = gameWin,
+                        GuessIndex = guessIndex,
+                        GuessAccuracy = guessAccuracy,
+                        Message = message
+                    };
+
+                    response.CorrectLetters.AddRange(correctLetters);
+                    response.IncorrectLetters.AddRange(incorrectLetters);
+                    response.AvailableLetters.AddRange(availableLetters);
+
+
+                    await responseStream.WriteAsync(response);
+
+                    if (gameOver)
+                    {
+                        m.WaitOne();
+                        try
+                        {
+                            UserData data;
+                            string json;
+                            try
+                            {
+                                json = File.ReadAllText("userData.json");
+                                data = Newtonsoft.Json.JsonConvert.DeserializeObject<UserData>(json) ?? new();
+                            }
+                            catch (FileNotFoundException)
+                            {
+                                File.WriteAllText("userData.json", "");
+                                data = new();
+                            }
+                            
+
+                            data.NumUsers++;
+                            if (gameWin)
+                            {
+                                data.Winners++;
+                                data.UserGuesses[guessIndex]++;
+                            }
+                            json = JsonSerializer.Serialize(data);
+                            File.WriteAllText("userData.json", json);
+                        }
+                        finally
+                        {
+                            m.ReleaseMutex();
+                        }
+                        break;
                     }
-                    break;
+                    guessIndex++;
                 }
-                guessIndex++;
             }
         }
 

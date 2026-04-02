@@ -30,6 +30,6 @@ message StatRequest{}
 // The response message containing the user stats.
 message UserStats {
   int32 numUsers = 1;
-  float percentWon = 2;
+  float percentWon = 2;//for example, will be passed back as '80' instead of '0.8'
   repeated int32 guesses = 3;//array of ints (only 6 guesses so make sure the client reflects that)
 }
