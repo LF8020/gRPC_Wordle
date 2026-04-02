@@ -14,7 +14,15 @@ message GuessedWord{
 }
 
 message PlayValues{
-  string resultString = 1;
+  bool validGuess = 1; //valid word
+  bool gameOver = 2; //is the game over
+  bool gameWin = 3; //did the player win?
+  int32 guessIndex = 4; //Which guess is this
+  string guessAccuracy = 5; //string showing how close was the guess
+  repeated string correctLetters = 6; //letters guessed correctly
+  repeated string incorrectLetters = 7; //letters guessed incorrectly
+  repeated string availableLetters = 8; //letters not guessed
+  string message = 9; //message for player
 }
 
 message StatRequest{}
@@ -23,5 +31,5 @@ message StatRequest{}
 message UserStats {
   int32 numUsers = 1;
   float percentWon = 2;//for example, will be passed back as '80' instead of '0.8'
-  repeated int32 guesses = 3;//array of ints
+  repeated int32 guesses = 3;//array of ints (only 6 guesses so make sure the client reflects that)
 }
