@@ -8,7 +8,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace WordleGameServer.Services
 {
-    public class UserData
+    public class UserData//Declare user object to better store 
     {
         public int NumUsers { get; set; }
         public int Winners { get; set; }
@@ -18,10 +18,7 @@ namespace WordleGameServer.Services
         {
             NumUsers = 0;
             Winners = 0;
-            UserGuesses = new List<int>()
-            {
-                0,0,0,0,0,0
-            };
+            UserGuesses = [0, 0, 0, 0, 0, 0];
         }
     }
     public class WordleService : Wordle.WordleBase
@@ -51,6 +48,7 @@ namespace WordleGameServer.Services
             return Task.FromResult(response);
         }
 
+        //Check if game is over
         public bool GameOver(string guess, string wordOfDay, int guessIndex)
         {
             if (GameWin(guess, wordOfDay)) return true;
@@ -59,6 +57,7 @@ namespace WordleGameServer.Services
             return false;
         }
 
+        //Check to see if game was won
         public bool GameWin(string guess, string wordOfDay)
         {
             if (guess == wordOfDay)
@@ -68,6 +67,7 @@ namespace WordleGameServer.Services
             return false;
         }
 
+        //Check guess accuracy and return '*' if correct, '?' if correct but in wrong place, 'X' if wrong.
         public string GuessAccuracy(string guess, string wordOfDay)
         {
             char[] result = new char[5];
@@ -117,7 +117,8 @@ namespace WordleGameServer.Services
             return stringResult;
         }
 
-        public void UpdateCorrectLetters(string guess, string guessAccuracy, List<string> currentCorrectLetters)
+        //Update letters correct list 
+        public List<string> UpdateCorrectLetters(string guess, string guessAccuracy, List<string> currentCorrectLetters)
         {
 
             for (int i = 0; i < 5; i++)
@@ -129,9 +130,11 @@ namespace WordleGameServer.Services
                     currentCorrectLetters.Add(currentLetter);
                 }
             }
+            return currentCorrectLetters;
         }
 
-        public void UpdateIncorrectLetters(string guess, string wordOfDay, List<string> currentIncorrectLetters)
+        //Update incorrect letters list
+        public List<string> UpdateIncorrectLetters(string guess, string wordOfDay, List<string> currentIncorrectLetters)
         {
             for (int i = 0; i < 5; i++)
             {
@@ -142,9 +145,11 @@ namespace WordleGameServer.Services
                     currentIncorrectLetters.Add(currentLetter);
                 }
             }
+            return currentIncorrectLetters;
         }
 
-        public void UpdateAvailableLetters(List<string> correctLetters, List<string> incorrectLetters, List<string> availableLetters)
+        //Update available letters list
+        public List<string> UpdateAvailableLetters(List<string> correctLetters, List<string> incorrectLetters, List<string> availableLetters)
         {
             for (int i = availableLetters.Count - 1; i >= 0; i--)
             {
@@ -155,8 +160,10 @@ namespace WordleGameServer.Services
                     availableLetters.RemoveAt(i);
                 }
             }
+            return availableLetters;
         }
 
+        //Play RPC
         public override async Task Play(IAsyncStreamReader<GuessedWord> requestStream, IServerStreamWriter<PlayValues> responseStream, ServerCallContext context)
         {
             Mutex m = new();
@@ -171,26 +178,27 @@ namespace WordleGameServer.Services
             string wordOfDay = word.GetWord(request).Word;//Assign word to string
             int guessIndex = 0;
 
-
-            List<string> correctLetters = new List<string>();
-            List<string> incorrectLetters = new List<string>();
-
-            List<string> availableLetters = new List<string>()
-            {
+            //letter lists
+            List<string> correctLetters = [];
+            List<string> incorrectLetters = [];
+            List<string> availableLetters = 
+            [
                 "a","b","c","d","e","f",
                 "g","h","i","j","k","l",
                 "m","n","o","p","q","r",
                 "s","t","u","v","w","x",
                 "y","z"
-            };
+            ];
 
+            //While stream is still active and guesses are below 6
             while (await requestStream.MoveNext() && guessIndex < 6)
             {
                 InputWord wordToCheck = new InputWord()
-                {
+                {//Get new input word from requestStream
                     Word = requestStream.Current.Guess.ToLower()
                 };
 
+                //If word isn't valid, send back "Invalid Guess"
                 if (!word.ValidateWord(wordToCheck).IsValid)
                 {
                     await responseStream.WriteAsync(new PlayValues
@@ -203,24 +211,31 @@ namespace WordleGameServer.Services
                         Message = "Invalid Guess"
                     });
                 }
+                //Otherwise, continue
                 else
                 {
-
+                    //Check guessAccuracy and send to a new string
                     string guessAccuracy = GuessAccuracy(wordToCheck.Word, wordOfDay);
 
-                    UpdateCorrectLetters(wordToCheck.Word, guessAccuracy, correctLetters);
-                    UpdateIncorrectLetters(wordToCheck.Word, guessAccuracy, incorrectLetters);
-                    UpdateAvailableLetters(correctLetters, incorrectLetters, availableLetters);
+                    //Update letter lists
+                    correctLetters = UpdateCorrectLetters(wordToCheck.Word, guessAccuracy, correctLetters);
+                    incorrectLetters = UpdateIncorrectLetters(wordToCheck.Word, guessAccuracy, incorrectLetters);
+                    availableLetters = UpdateAvailableLetters(correctLetters, incorrectLetters, availableLetters);
 
+                    //Check if game is won or game is over
                     bool gameWin = GameWin(wordToCheck.Word, wordOfDay);
                     bool gameOver = GameOver(wordToCheck.Word, wordOfDay, guessIndex);
-                    string message = "Countinue...";
 
+                    //Assign message according to gameWin or gameOver
+                    string message;
                     if (gameWin)
                         message = "You Win!";
-                    if (gameOver)
+                    else if (gameOver)
                         message = "You Lose :( the word was" + wordOfDay;
+                    else
+                        message = "Continue...";
 
+                    //Make a response object
                     PlayValues response = new PlayValues
                     {
                         ValidGuess = true,
@@ -230,16 +245,18 @@ namespace WordleGameServer.Services
                         GuessAccuracy = guessAccuracy,
                         Message = message
                     };
-
+                    //Add lists to object in form of ranges
                     response.CorrectLetters.AddRange(correctLetters);
                     response.IncorrectLetters.AddRange(incorrectLetters);
                     response.AvailableLetters.AddRange(availableLetters);
 
-
+                    //write to responseStream
                     await responseStream.WriteAsync(response);
 
+                    //If the game is over, continue final loop
                     if (gameOver)
                     {
+                        //Lock the mutex
                         m.WaitOne();
                         try
                         {
@@ -247,156 +264,40 @@ namespace WordleGameServer.Services
                             string json;
                             try
                             {
+                                //Read file in to adjust values
                                 json = File.ReadAllText("userData.json");
                                 data = Newtonsoft.Json.JsonConvert.DeserializeObject<UserData>(json) ?? new();
                             }
                             catch (FileNotFoundException)
                             {
+                                //If file not found, make one and make an empty object with properties set to 0
                                 File.WriteAllText("userData.json", "");
                                 data = new();
                             }
                             
-
+                            //Adjust values previously read
                             data.NumUsers++;
                             if (gameWin)
                             {
                                 data.Winners++;
                                 data.UserGuesses[guessIndex]++;
                             }
+
+                            //Write to file under protection of the mutex
                             json = JsonSerializer.Serialize(data);
                             File.WriteAllText("userData.json", json);
                         }
                         finally
                         {
+                            //Finally, release mutex when done.
                             m.ReleaseMutex();
                         }
+                        //Break from loop to not unnecessarily increase guessIndex
                         break;
                     }
                     guessIndex++;
                 }
             }
         }
-
-                /*
-                public override async Task Play(IAsyncStreamReader<GuessedWord> requestStream, IServerStreamWriter<PlayValues> responseStream, ServerCallContext context)
-                {
-                    string wordOfDay = "zonal";//TODO: Will call other service later to get word of day. zonal is just a test assignment
-
-                    int turns = 0;
-                    bool gameWon = false;
-                    bool validWord = true;//TODO: Replace with call to other service's validateWord to check guessed word against it
-                    char[] resultChars = new char[5];//Result string sent back, the *, ?, X
-
-                    while (await requestStream.MoveNext() && !gameWon && turns < 6)//TODO: need so somehow check if another word is played according to project file, not sure what they mean.
-                    {
-                        GuessedWord request = requestStream.Current;
-                        PlayValues response;
-
-                        if (validWord)
-                        {
-                            if (request.Guess == wordOfDay)
-                            {
-                                gameWon = true;
-                                for (int i = 0; i < 5; i++)
-                                {
-                                    resultChars[i] = '*';
-                                }
-                                numUsers++;
-                                winners++;//TODO: update these to read file operation, then adjust value, then write back
-                                userGuesses[turns]++;
-                            }
-                            else
-                            {
-                                Dictionary<char, int> matches = new Dictionary<char, int>()
-                                {
-                                    ['A'] = 0,
-                                    ['B'] = 0,
-                                    ['C'] = 0,
-                                    ['D'] = 0,
-                                    ['E'] = 0,
-                                    ['F'] = 0,
-                                    ['G'] = 0,
-                                    ['H'] = 0,
-                                    ['I'] = 0,
-                                    ['J'] = 0,
-                                    ['K'] = 0,
-                                    ['L'] = 0,
-                                    ['M'] = 0,
-                                    ['N'] = 0,
-                                    ['O'] = 0,
-                                    ['P'] = 0,
-                                    ['Q'] = 0,
-                                    ['R'] = 0,
-                                    ['S'] = 0,
-                                    ['T'] = 0,
-                                    ['U'] = 0,
-                                    ['V'] = 0,
-                                    ['W'] = 0,
-                                    ['X'] = 0,
-                                    ['Y'] = 0,
-                                    ['Z'] = 0,
-                                };
-
-                                //Check to see if letter is in corect position
-                                for (int i = 0; i < wordOfDay.Length; i++)
-                                {
-                                    char letter = request.Guess[i];
-                                    if (letter == wordOfDay[i])
-                                    {
-                                        resultChars[i] = '*';
-                                        matches[letter]++;
-                                    }
-                                }
-
-                                //Search request word for letters that aren't in correct position
-                                for (int i = 0; i < wordOfDay.Length; i++)
-                                {
-                                    char letter = request.Guess[i];
-                                    if (CountFrequency(wordOfDay, letter) == 0)
-                                    {
-                                        resultChars[i] = 'X';
-
-                                    }
-                                    else if (letter != wordOfDay[i])
-                                    {
-                                        if (matches[letter] < CountFrequency(wordOfDay, letter))
-                                        {
-                                            resultChars[i] = '?';//Looking at this if statement we're given, it seems wrong.
-                                            matches[letter] += 1;//I know it's meant to check if there's more than one letter of the same letter but I feel like it's updated wrong, unless matches resets between iterations.
-                                        }
-                                        else
-                                        {
-                                            resultChars[i] = 'X';//Should theoretically be called when there's more letters than matches.
-                                            //Example: aabbb
-                                            //Input word: aaabb
-                                            // **X**
-
-                                            //Example: aacbd
-                                            //Input word: bbaaa
-                                            // ?X??X
-
-                                            //In a nutshell, if there's too many of a letter, subsequent iterations of that letter are 'wrong'
-                                        }
-                                    }
-                                }
-                            }
-                            response = new()
-                            {
-                                Message = resultChars.ToString() ?? ""
-                            };
-                            turns++;//TODO: Update the user's turns. Not sure how to get this to persist across calls, haven't looked at bidirectional yet.
-                        }
-                        else
-                        {
-                            //TODO: Return something to communicate that the word was not valid. Do not increment turns.
-                            response = new()
-                            {
-                                Message = ""
-                            };
-                        }
-                        await responseStream.WriteAsync(response);
-                    }
-                }
-                */
-            }
-        } 
+    }
+} 
