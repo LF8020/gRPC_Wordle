@@ -12,7 +12,7 @@ namespace WordleGameServer.Services
     {
         public int NumUsers { get; set; }
         public int Winners { get; set; }
-        public List<int> UserGuesses { get; set; }
+        public int[] UserGuesses { get; set; }
 
         public UserData()
         {
@@ -36,39 +36,34 @@ namespace WordleGameServer.Services
         //GetStats will return stored values from a file which are updated each time a user finishes a game.
         public override Task<UserStats> GetStats(StatRequest request, ServerCallContext context)
         {
+            Mutex m = new();
+            m.WaitOne();
             string json = File.ReadAllText("userData.json");
             UserData data = Newtonsoft.Json.JsonConvert.DeserializeObject<UserData>(json) ?? new();
-            UserStats response;
+            UserStats response = new();
 
+            //If users read is greater than 0, create object using read values to return
             if (data.NumUsers > 0)
             {
                 response = new()
                 {
-
                     PercentWon = (float)(Math.Round(((decimal)data.Winners / data.NumUsers) * 100) / 100),
                     NumUsers = data.NumUsers
                 };
             }
             else
             {
+                //Else, make new object
                 response = new()
                 {
-
                     PercentWon = 0,
-                    NumUsers = data.NumUsers
+                    NumUsers = 0
                 };
             }
 
-            for (int i = 0; i < response.Guesses.Count; i++)
-            {
-                if (data.UserGuesses[i] == 1)
-                {
-                    response.Guesses[i]++;
-                }
-            }
+            response.Guesses.AddRange(data.UserGuesses);
 
-            //response.Guesses.AddRange(data.UserGuesses);
-
+            m.ReleaseMutex();
             return Task.FromResult(response);
         }
 
@@ -314,7 +309,6 @@ namespace WordleGameServer.Services
                                 File.WriteAllText("userData.json", "");
                                 data = new();
                             }
-                            
                             //Adjust values previously read
                             data.NumUsers++;
                             if (gameWin)
@@ -322,7 +316,6 @@ namespace WordleGameServer.Services
                                 data.Winners++;
                                 data.UserGuesses[guessIndex - 1]++;
                             }
-
                             //Write to file under protection of the mutex
                             json = JsonSerializer.Serialize(data);
                             File.WriteAllText("userData.json", json);
@@ -335,7 +328,7 @@ namespace WordleGameServer.Services
                         //Break from loop to not unnecessarily increase guessIndex
                         break;
                     }
-                    
+                    guessIndex++;
                 }
             }
         }
