@@ -100,9 +100,15 @@ namespace WordleGameClient
 
                 UserStats userStats = await word.GetStatsAsync(new StatRequest());
 
-                Console.WriteLine(userStats.NumUsers);
-                Console.WriteLine(userStats.PercentWon);
-                Console.WriteLine(userStats.Guesses);
+                Console.WriteLine($"Players: {userStats.NumUsers}");
+                Console.WriteLine($"Winners: {userStats.PercentWon}%");
+                int count = 1;
+                Console.WriteLine("Guess Distribution...");
+                foreach(var guess in userStats.Guesses)
+                {
+                    Console.WriteLine($"{count}.) {guess}");
+                    count++;
+                }
 
             }//end of try
             catch (RpcException e)
