@@ -12,10 +12,19 @@ namespace WordleGameServer.Services
     {
         public int NumUsers { get; set; }
         public int Winners { get; set; }
+        public string WordOfDay { get; set; }
         public int[] UserGuesses { get; set; }
 
         public UserData()
         {
+            WordOfDay = "";
+            NumUsers = 0;
+            Winners = 0;
+            UserGuesses = [0, 0, 0, 0, 0, 0];
+        }
+        public UserData(string wordOfDay)
+        {
+            WordOfDay = wordOfDay;
             NumUsers = 0;
             Winners = 0;
             UserGuesses = [0, 0, 0, 0, 0, 0];
@@ -301,13 +310,13 @@ namespace WordleGameServer.Services
                             {
                                 //Read file in to adjust values
                                 json = File.ReadAllText("userData.json");
-                                data = Newtonsoft.Json.JsonConvert.DeserializeObject<UserData>(json) ?? new();
+                                data = Newtonsoft.Json.JsonConvert.DeserializeObject<UserData>(json) ?? new(wordOfDay);
                             }
                             catch (FileNotFoundException)
                             {
                                 //If file not found, make one and make an empty object with properties set to 0
                                 File.WriteAllText("userData.json", "");
-                                data = new();
+                                data = new(wordOfDay);
                             }
                             //Adjust values previously read
                             data.NumUsers++;
@@ -315,6 +324,14 @@ namespace WordleGameServer.Services
                             {
                                 data.Winners++;
                                 data.UserGuesses[guessIndex - 1]++;
+                            }
+                            //If word of day changed, (such as a new day) delete userData file and revert data to default values. Write those default values
+                            if (data.WordOfDay != wordOfDay)
+                            {
+                                File.Delete("userData.json");
+                                data.NumUsers = 0;
+                                data.Winners = 0;
+                                data.UserGuesses = [0, 0, 0, 0, 0, 0];
                             }
                             //Write to file under protection of the mutex
                             json = JsonSerializer.Serialize(data);
