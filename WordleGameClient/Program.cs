@@ -5,46 +5,116 @@ namespace WordleGameClient
 {
     internal class Program
     {
+        public static void Format()
+        { 
+            Console.WriteLine("+-------------------+");
+            Console.WriteLine("| W O R D L E D |");
+            Console.WriteLine("+-------------------+");
+            Console.WriteLine();
+            Console.WriteLine("You have 6 chances to guess a 5-letter word.");
+            Console.WriteLine("Each guess must be a 'playable' 5 letter word.");
+            Console.WriteLine("After a guess the game will display a series of");
+            Console.WriteLine("characters to show you how good your guess was.");
+            Console.WriteLine("x - means the letter above is not in the word.");
+            Console.WriteLine("? - means the letter should be in another spot.");
+            Console.WriteLine("* - means the letter is correct in this spot.");
+            Console.WriteLine();
+        }
+
+        public static void PrintLetters(List<string> letters)
+        {
+            for (int i = 0; i < letters.Count; i++)
+            {
+                Console.Write(letters[i]);
+                if (!(i == letters.Count - 1))
+                    Console.Write(",");
+            }
+            Console.WriteLine();
+        }
+
         static async Task Main(string[] args)
         {
-            //Tests for WordServer
-            
-            // Connect to the service
-            var channel = GrpcChannel.ForAddress("https://localhost:7289");
-            var word = new Wordle.WordleClient(channel);
-            using (AsyncDuplexStreamingCall<GuessedWord, PlayValues> call = word.Play())
+            Format();
+
+            try
             {
-                PlayValues wordleGame;
-                GuessedWord input = new();
-                do
+                // Connect to the service
+                var channel = GrpcChannel.ForAddress("https://localhost:7289");
+                var word = new Wordle.WordleClient(channel);
+                using (AsyncDuplexStreamingCall<GuessedWord, PlayValues> call = word.Play())
                 {
-                    Console.WriteLine("Please guess a 5 letter word");
-                    input.Guess = Console.ReadLine() ?? "";
+                    //for initial values and available letters
 
-                    //await write to bidirectional RPC
-                    await call.RequestStream.WriteAsync(input);
-                    //await read from bidirectional RPC
                     await call.ResponseStream.MoveNext();
-                    //assign values returned from RPC to PlayValues object
-                    wordleGame = call.ResponseStream.Current;
+                    var response = call.ResponseStream.Current;
 
-                    Console.WriteLine(wordleGame.GuessAccuracy);
-                    Console.WriteLine(wordleGame.ValidGuess);
-                    Console.WriteLine(wordleGame.Message);
-                } while (!wordleGame.GameOver);
+                    string guess = "";
+
+                    Console.Write("Available: ");
+                    PrintLetters(response.AvailableLetters.ToList());
+
+                    while (true)
+                    {
+
+                        Console.WriteLine();
+                        Console.Write($"{response.GuessIndex}: ");
+
+                        guess = Console.ReadLine().Trim().ToLower();
+                        Console.WriteLine();
+
+                        await call.RequestStream.WriteAsync(new GuessedWord { Guess = guess });
+
+                        await call.ResponseStream.MoveNext();
+                        response = call.ResponseStream.Current;
+
+                        if (!response.ValidGuess)
+                        {
+                            Console.WriteLine($"{guess} is not a valid response please input a 5 letter word");
+                            continue;
+                        }
+
+                        Console.WriteLine(response.GuessAccuracy);
+                        Console.WriteLine();
+
+                        if (response.GameOver)
+                        {
+                            Console.WriteLine($"{response.Message}");
+                            break;
+                        }
+
+                        Console.Write("Included: ");
+                        PrintLetters(response.CorrectLetters.ToList());
+                        Console.Write("Available: ");
+                        PrintLetters(response.AvailableLetters.ToList());
+                        Console.Write("Excluded: ");
+                        PrintLetters(response.IncorrectLetters.ToList());
+                        Console.WriteLine();
+
+                    } //end of game loop
+
+
+
+                    await call.RequestStream.CompleteAsync();
+
+                }//end of using
+
+                UserStats userStats = await word.GetStatsAsync(new StatRequest());
+
+                Console.WriteLine(userStats.NumUsers);
+                Console.WriteLine(userStats.PercentWon);
+                Console.WriteLine(userStats.Guesses);
+
+            }//end of try
+            catch (RpcException e)
+            {
+                Console.WriteLine("Could not connect with WordleGameServer.");
+                Console.WriteLine($"gRPC error: {e.Status.Detail}");
             }
-            // Create a parameter of the type required by the service method
-            //WordRequest request = new();
-            //request.Date = DateTime.Now.Ticks;
-            //WordResult result = word.GetWord(request);
-            //Console.WriteLine(result.Word);
-            
-            //InputWord request2 = new();
-            //Console.WriteLine("Enter a word to see if it matches a word in wordle.json");
-            //request2.Word = Console.ReadLine();
-            //ValidationResult result2 = word.ValidateWord(request2);
-            //Console.WriteLine(result2.IsValid);
-            //Console.ReadLine();
+            catch (Exception e)
+            {
+                Console.WriteLine("uh-oh weird error");
+                Console.WriteLine(e.Message);
+            }
         }
     }
 }

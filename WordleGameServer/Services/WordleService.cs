@@ -38,13 +38,37 @@ namespace WordleGameServer.Services
         {
             string json = File.ReadAllText("userData.json");
             UserData data = Newtonsoft.Json.JsonConvert.DeserializeObject<UserData>(json) ?? new();
+            UserStats response;
 
-            UserStats response = new()
+            if (data.NumUsers > 0)
             {
-                PercentWon = (float)(Math.Round(((decimal)data.Winners / data.NumUsers) * 100) / 100),
-                NumUsers = data.NumUsers
-            };
-            response.Guesses.AddRange(data.UserGuesses);
+                response = new()
+                {
+
+                    PercentWon = (float)(Math.Round(((decimal)data.Winners / data.NumUsers) * 100) / 100),
+                    NumUsers = data.NumUsers
+                };
+            }
+            else
+            {
+                response = new()
+                {
+
+                    PercentWon = 0,
+                    NumUsers = data.NumUsers
+                };
+            }
+
+            for (int i = 0; i < response.Guesses.Count; i++)
+            {
+                if (data.UserGuesses[i] == 1)
+                {
+                    response.Guesses[i]++;
+                }
+            }
+
+            //response.Guesses.AddRange(data.UserGuesses);
+
             return Task.FromResult(response);
         }
 
@@ -176,7 +200,7 @@ namespace WordleGameServer.Services
                 Date = new DateTime().Ticks
             };
             string wordOfDay = word.GetWord(request).Word;//Assign word to string
-            int guessIndex = 0;
+            int guessIndex = 1;
 
             //letter lists
             List<string> correctLetters = [];
@@ -189,6 +213,19 @@ namespace WordleGameServer.Services
                 "s","t","u","v","w","x",
                 "y","z"
             ];
+
+            var response = new PlayValues
+            {
+                ValidGuess = true,
+                GameOver = false,
+                GameWin = false,
+                GuessIndex = 1,
+                GuessAccuracy = "",
+                Message = "Start"
+            };
+
+            response.AvailableLetters.AddRange(availableLetters);
+            await responseStream.WriteAsync(response);
 
             //While stream is still active and guesses are below 6
             while (await requestStream.MoveNext() && guessIndex < 6)
@@ -210,6 +247,7 @@ namespace WordleGameServer.Services
                         GuessAccuracy = "",
                         Message = "Invalid Guess"
                     });
+                    continue;
                 }
                 //Otherwise, continue
                 else
@@ -235,8 +273,10 @@ namespace WordleGameServer.Services
                     else
                         message = "Continue...";
 
+                    
+                    
                     //Make a response object
-                    PlayValues response = new PlayValues
+                    response = new PlayValues
                     {
                         ValidGuess = true,
                         GameOver = gameOver,
@@ -280,7 +320,7 @@ namespace WordleGameServer.Services
                             if (gameWin)
                             {
                                 data.Winners++;
-                                data.UserGuesses[guessIndex]++;
+                                data.UserGuesses[guessIndex - 1]++;
                             }
 
                             //Write to file under protection of the mutex
@@ -295,7 +335,7 @@ namespace WordleGameServer.Services
                         //Break from loop to not unnecessarily increase guessIndex
                         break;
                     }
-                    guessIndex++;
+                    
                 }
             }
         }
