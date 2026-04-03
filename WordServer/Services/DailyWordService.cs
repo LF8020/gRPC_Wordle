@@ -16,17 +16,13 @@ namespace WordServer.Services
     //ii.ValidateWord
     //1.    Returns a Boolean value of true if the word argument passed-in matches a
     //      word in the file wordle.json
+
+    //DailyWordService, Programmed by Lucas Frada
     public class DailyWordService : Word.WordBase
     {
-
-        //private readonly ILogger<DailyWordService> _logger;
-        //public DailyWordService(ILogger<DailyWordService> logger)
-        //{
-        //    _logger = logger;
-        //}
-
+        //Validate word against wordle.json contents
         public override Task<ValidationResult> ValidateWord(InputWord request, ServerCallContext context)
-        {//Validate word against wordle.json contents
+        {
             string json = File.ReadAllText("wordle.json");//have to do this twice for some reason, words will get reset if it's a class property.
             List<string> words = Newtonsoft.Json.JsonConvert.DeserializeObject<List<string>>(json) ?? [];
             foreach (string word in words)
@@ -43,6 +39,7 @@ namespace WordServer.Services
             });
         }
 
+        //Get daily word from wordle.json
         public override Task<WordResult> GetWord(WordRequest request, ServerCallContext context)
         {
             string json = File.ReadAllText("wordle.json");
