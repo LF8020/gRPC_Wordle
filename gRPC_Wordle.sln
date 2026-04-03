@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35514.174
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordleGameClient", "WordleGameClient\WordleGameClient.csproj", "{1CDA114C-6A93-4F4B-B156-BB9404E0B509}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordleGameClient", "WordleGameClient\WordleGameClient.csproj", "{2C5E3C62-7DB6-4F01-8B98-E17EAD0A0C04}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordleGameServer", "WordleGameServer\WordleGameServer.csproj", "{BB56351F-F4AC-4AE3-A0FA-8384FA1B2B62}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordleGameServer", "WordleGameServer\WordleGameServer.csproj", "{FD443B98-1D15-4AC5-89D9-6584F302DC84}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordServer", "WordServer\WordServer.csproj", "{5773A165-5BFB-4373-B783-60CE87C84A1B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordServer", "WordServer\WordServer.csproj", "{40DAF951-C343-4C3C-BCF7-57D115E8DFA0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,18 +15,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{1CDA114C-6A93-4F4B-B156-BB9404E0B509}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1CDA114C-6A93-4F4B-B156-BB9404E0B509}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1CDA114C-6A93-4F4B-B156-BB9404E0B509}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1CDA114C-6A93-4F4B-B156-BB9404E0B509}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BB56351F-F4AC-4AE3-A0FA-8384FA1B2B62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BB56351F-F4AC-4AE3-A0FA-8384FA1B2B62}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BB56351F-F4AC-4AE3-A0FA-8384FA1B2B62}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BB56351F-F4AC-4AE3-A0FA-8384FA1B2B62}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5773A165-5BFB-4373-B783-60CE87C84A1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5773A165-5BFB-4373-B783-60CE87C84A1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5773A165-5BFB-4373-B783-60CE87C84A1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5773A165-5BFB-4373-B783-60CE87C84A1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C5E3C62-7DB6-4F01-8B98-E17EAD0A0C04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C5E3C62-7DB6-4F01-8B98-E17EAD0A0C04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C5E3C62-7DB6-4F01-8B98-E17EAD0A0C04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C5E3C62-7DB6-4F01-8B98-E17EAD0A0C04}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD443B98-1D15-4AC5-89D9-6584F302DC84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD443B98-1D15-4AC5-89D9-6584F302DC84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD443B98-1D15-4AC5-89D9-6584F302DC84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD443B98-1D15-4AC5-89D9-6584F302DC84}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40DAF951-C343-4C3C-BCF7-57D115E8DFA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40DAF951-C343-4C3C-BCF7-57D115E8DFA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40DAF951-C343-4C3C-BCF7-57D115E8DFA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40DAF951-C343-4C3C-BCF7-57D115E8DFA0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
