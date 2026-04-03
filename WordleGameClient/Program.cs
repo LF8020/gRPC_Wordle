@@ -3,6 +3,7 @@ using Grpc.Net.Client;
 using WordleGameServer.Protos;
 namespace WordleGameClient
 {
+    //WordleGameClient, programmed by Ryan Dekoninck
     internal class Program
     {
         public static void Format()
@@ -59,7 +60,7 @@ namespace WordleGameClient
                         Console.WriteLine();
                         Console.Write($"{response.GuessIndex}: ");
 
-                        guess = Console.ReadLine().Trim().ToLower();
+                        guess = Console.ReadLine() ?? "".Trim().ToLower();
                         Console.WriteLine();
 
                         await call.RequestStream.WriteAsync(new GuessedWord { Guess = guess });

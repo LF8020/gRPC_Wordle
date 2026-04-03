@@ -8,6 +8,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace WordleGameServer.Services
 {
+    //WordleService, Programmed by Lucas Frada and Ryan Dekoninck
     public class UserData//Declare user object to better store 
     {
         public int NumUsers { get; set; }

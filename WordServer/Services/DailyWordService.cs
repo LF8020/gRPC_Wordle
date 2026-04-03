@@ -16,6 +16,8 @@ namespace WordServer.Services
     //ii.ValidateWord
     //1.    Returns a Boolean value of true if the word argument passed-in matches a
     //      word in the file wordle.json
+
+    //DailyWordService, Programmed by Lucas Frada
     public class DailyWordService : Word.WordBase
     {
         //Validate word against wordle.json contents
